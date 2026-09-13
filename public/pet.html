@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>灯芯</title>
+    <style>
+      @font-face {
+        font-family: InkKai;
+        src: url("./fonts/LXGWWenKai-Medium.woff2") format("woff2");
+      }
+      html, body {
+        margin: 0;
+        overflow: hidden;
+        background: transparent;
+        font-family: InkKai, serif;
+        user-select: none;
+        pointer-events: none;
+      }
+      html.dragging, html.dragging * { cursor: grabbing !important; }
+      .wrap {
+        height: 100vh;
+        display: grid;
+        place-items: center;
+      }
+      .pet {
+        --shine: 0.5;
+        width: 96px;
+        height: 116px;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        pointer-events: none;
+      }
+      svg { width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+      .halo { fill: #ffe08a; opacity: calc(var(--shine) * 0.55); filter: blur(6px); }
+      .flame {
+        fill: #ffe9a8;
+        transform-origin: 32px 28px;
+        transform: scale(calc(0.82 + var(--shine) * 0.5));
+        filter: drop-shadow(0 0 calc(4px + var(--shine) * 22px) rgba(255, 210, 120, 0.85));
+      }
+      .eye { fill: #10141c; }
+      .blush { fill: #c4a574; opacity: 0.4; }
+      .sleep { fill: none; stroke: #10141c; stroke-width: 2.2; stroke-linecap: round; display: none; }
+      .paw { fill: #0a101c; transform-origin: center; transition: transform 0.08s ease; }
+      .paw.left { transform-origin: 20px 52px; }
+      .paw.right { transform-origin: 44px 52px; }
+      .pet.hit-left .paw.left { transform: rotate(-32deg) translate(2px, 7px); }
+      .pet.hit-right .paw.right { transform: rotate(32deg) translate(-2px, 7px); }
+      .hit {
+        pointer-events: auto;
+        cursor: grab;
+        fill: rgba(0, 0, 0, 0.001);
+      }
+      .pet[data-mood="write"] .flame { animation: flicker 0.7s ease-in-out infinite; }
+      .pet[data-mood="cheer"] { animation: hop 0.4s ease-in-out 3; }
+      .pet[data-mood="nap"] .eye { display: none; }
+      .pet[data-mood="nap"] .sleep { display: block; }
+      .pet[data-mood="idle"] { animation: breathe 2.8s ease-in-out infinite; }
+      @keyframes flicker {
+        0%, 100% { transform: scale(calc(0.82 + var(--shine) * 0.5)); }
+        50% { transform: scale(calc(0.88 + var(--shine) * 0.52), calc(0.94 + var(--shine) * 0.58)); }
+      }
+      @keyframes hop {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-6px); }
+      }
+      @keyframes breathe {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-3px); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <button class="pet" id="pet" data-mood="idle" title="按住拖到任意位置。双击收回写字。">
+        <svg viewBox="0 0 64 80">
+          <ellipse class="halo" cx="32" cy="18" rx="18" ry="20" />
+          <ellipse class="flame" cx="32" cy="18" rx="7" ry="13" />
+          <ellipse cx="32" cy="48" rx="20" ry="17" fill="#163a6d" />
+          <ellipse class="blush" cx="20" cy="52" rx="4" ry="2" />
+          <ellipse class="blush" cx="44" cy="52" rx="4" ry="2" />
+          <ellipse class="paw left" cx="18" cy="61" rx="7" ry="4.5" />
+          <ellipse class="paw right" cx="46" cy="61" rx="7" ry="4.5" />
+          <rect x="8" y="68" width="48" height="6" rx="1.5" fill="#0a101c" opacity="0.55" />
+          <ellipse class="eye" cx="24.5" cy="45.6" rx="2.05" ry="2.65" />
+          <ellipse class="eye" cx="39.5" cy="45.6" rx="2.05" ry="2.65" />
+          <path class="sleep" d="M22 46h7M36 46h7" />
+          <ellipse class="hit" cx="32" cy="50" rx="20" ry="18" />
+          <ellipse class="hit" cx="32" cy="18" rx="7.5" ry="13" />
+        </svg>
+      </button>
+    </div>
+    <script>
+      const pet = document.getElementById("pet");
+      let drag = null;
+
+      window.inkdesk?.onBongo?.((hit) => {
+        const side = hit === "left" || hit === "right" ? hit : null;
+        pet.classList.remove("hit-left", "hit-right");
+        pet.classList.add(side === "left" ? "hit-left" : "hit-right");
+        clearTimeout(pet._t);
+        pet._t = setTimeout(() => pet.classList.remove("hit-left", "hit-right"), 140);
+      });
+      window.inkdesk?.onLampState?.((s) => {
+        if (!s) return;
+        pet.dataset.mood = s.mood || "idle";
+        pet.style.setProperty("--shine", String(s.shine ?? 0.4));
+      });
+
+      function overHit(x, y) {
+        const el = document.elementFromPoint(x, y);
+        return !!(el && el.classList && el.classList.contains("hit"));
+      }
+
+      function setIgnore(ignore) {
+        if (drag) {
+          window.inkdesk?.setPetIgnoreMouse?.(false);
+          return;
+        }
+        window.inkdesk?.setPetIgnoreMouse?.(ignore);
+      }
+
+      function startDrag(e) {
+        if (e.button !== 0 || !overHit(e.clientX, e.clientY)) return;
+        drag = {
+          pointer: e.pointerId,
+          startX: e.screenX,
+          startY: e.screenY,
+          moved: false,
+        };
+        document.documentElement.classList.add("dragging");
+        window.inkdesk?.setPetIgnoreMouse?.(false);
+        window.inkdesk?.petDragStart?.(e.screenX, e.screenY);
+        try {
+          e.target.setPointerCapture(e.pointerId);
+        } catch {}
+      }
+
+      function moveDrag(e) {
+        if (!drag) {
+          setIgnore(!overHit(e.clientX, e.clientY));
+          return;
+        }
+        if (e.pointerId !== drag.pointer) return;
+        const dx = e.screenX - drag.startX;
+        const dy = e.screenY - drag.startY;
+        if (!drag.moved && dx * dx + dy * dy < 25) return;
+        drag.moved = true;
+        window.inkdesk?.petDragMove?.(e.screenX, e.screenY);
+      }
+
+      function endDrag(e) {
+        if (!drag || (e && e.pointerId !== drag.pointer)) return;
+        document.documentElement.classList.remove("dragging");
+        window.inkdesk?.petDragEnd?.();
+        drag = null;
+        setIgnore(e ? !overHit(e.clientX, e.clientY) : true);
+      }
+
+      document.addEventListener("pointerdown", startDrag);
+      document.addEventListener("pointermove", moveDrag);
+      document.addEventListener("pointerup", endDrag);
+      document.addEventListener("pointercancel", endDrag);
+      document.addEventListener("mouseleave", () => setIgnore(true));
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") window.inkdesk?.togglePet?.();
+      });
+
+      pet.addEventListener("dblclick", (e) => {
+        if (!overHit(e.clientX, e.clientY)) return;
+        e.preventDefault();
+        window.inkdesk?.togglePet?.();
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>inkdesk</title>
+    <link rel="icon" type="image/png" href="./icon.png" />
+  </head>
+  <body>
+    <div id="app">
+      <nav class="rail" aria-label="功能">
+        <button class="rail-btn active" data-act="files" title="文稿">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+            <path d="M5 4.5h9.5L19 9v10.5H5z" />
+            <path d="M14.5 4.5V9H19" />
+          </svg>
+        </button>
+        <button class="rail-btn" data-act="cards" title="卡片盒">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+            <rect x="5" y="8" width="14" height="11" rx="1.4" />
+            <path d="M8 8V6.5A1.5 1.5 0 0 1 9.5 5h5A1.5 1.5 0 0 1 16 6.5V8" />
+            <path d="M8 12h8M8 15h5" />
+          </svg>
+        </button>
+        <button class="rail-btn" data-act="typewriter" title="打字机模式">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+            <rect x="3.5" y="6" width="17" height="12" rx="1.5" />
+            <path d="M7 10h10M7 13h6" />
+          </svg>
+        </button>
+        <button class="rail-btn" data-act="export" title="导出长图">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+            <rect x="6" y="3.5" width="12" height="17" rx="1.5" />
+            <path d="M9 8h6M9 12h6M9 16h4" />
+          </svg>
+        </button>
+        <button class="rail-btn" data-act="stats" title="每日字数">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+            <path d="M4 19V5" />
+            <path d="M4 19h16" />
+            <path d="M7 16v-5h3v5" />
+            <path d="M12 16V8h3v8" />
+            <path d="M17 16v-3h3v3" />
+          </svg>
+        </button>
+        <div class="rail-space"></div>
+      </nav>
+
+      <aside class="sidebar">
+        <div class="project-head">
+          <input class="project-name" id="projectName" spellcheck="false" />
+        </div>
+        <div class="file-actions">
+          <button class="ghost" id="newFolder">新建文件夹</button>
+          <div class="file-split">
+            <button class="ghost" id="newFile">新建文稿</button>
+            <button class="caret" id="newFileMenu" type="button" title="新建选项" aria-expanded="false" aria-haspopup="true">
+              <svg viewBox="0 0 12 8" aria-hidden="true"><polygon points="2,2 10,2 6,7" fill="currentColor" /></svg>
+            </button>
+            <div class="file-pop" id="newFilePop" hidden>
+              <label>
+                <input type="checkbox" id="seedDialogue" />
+                是否自带 dialogue 格式
+              </label>
+              <p>勾选后，新建文稿会写成 .dialogue，并带上 <code>~ start</code>。</p>
+            </div>
+          </div>
+        </div>
+        <p class="tree-hint">点选后按 F2，或点「改」改名</p>
+        <div class="tree" id="tree"></div>
+        <section class="cards-box" id="cardsBox">
+          <header class="cards-head">
+            <h1>卡片盒</h1>
+            <p>随手记下的句子，不进文稿。</p>
+          </header>
+          <textarea class="card-draft" id="cardDraft" rows="3" placeholder="写一句，Enter 放进盒里。换行用 Shift+Enter。"></textarea>
+          <div class="card-stack" id="cardStack"></div>
+        </section>
+      </aside>
+
+      <section class="stats-pane" id="statsPane">
+        <header class="stats-head">
+          <h1>每日字数</h1>
+          <p>绿柱是当天写下的字，金线是走势。从这次更新起按天记下；更早的日子补不回来。</p>
+        </header>
+        <div class="stats-summary">
+          <div><span>今日</span><b id="statsToday">0</b></div>
+          <div><span>近 21 天</span><b id="statsRange">0</b></div>
+          <div><span>日均</span><b id="statsAvg">0</b></div>
+          <div><span>最多的一天</span><b id="statsPeak">0</b></div>
+        </div>
+        <div class="stats-chart-wrap">
+          <canvas id="statsChart"></canvas>
+        </div>
+      </section>
+
+      <section class="main">
+        <div class="toolbar" id="toolbar">
+          <button class="tb" data-md="bold" title="加粗"><b>B</b></button>
+          <button class="tb" data-md="italic" title="斜体"><i>I</i></button>
+          <button class="tb" data-md="strike" title="删除线"><s>S</s></button>
+          <div class="sep"></div>
+          <button class="tb" data-md="p" title="正文">P</button>
+          <button class="tb" data-md="h1" title="一级标题">H1</button>
+          <button class="tb" data-md="h2" title="二级标题">H2</button>
+          <button class="tb" data-md="quote" title="引用">“</button>
+          <button class="tb" data-md="ul" title="无序列表">•</button>
+          <button class="tb" data-md="ol" title="有序列表">1.</button>
+          <div class="sep"></div>
+          <button class="tb" data-align="left" title="居左">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M4 7h16M4 12h10M4 17h14" />
+            </svg>
+          </button>
+          <button class="tb" data-align="center" title="居中">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M4 7h16M7 12h10M5 17h14" />
+            </svg>
+          </button>
+          <button class="tb" data-align="right" title="居右">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M4 7h16M10 12h10M6 17h14" />
+            </svg>
+          </button>
+          <div class="sep"></div>
+          <div class="size-ctrl">
+            <button id="sizeDown" title="缩小字号">A−</button>
+            <span id="sizeLabel">18</span>
+            <button id="sizeUp" title="放大字号">A+</button>
+          </div>
+          <div class="switch">
+            Markdown
+            <button id="mdToggle" title="开闭 Markdown 语法"></button>
+          </div>
+        </div>
+        <div class="stage" id="stage">
+          <div class="empty" id="empty"><span>灯还亮着。先写一行就好。</span></div>
+          <div class="companion" id="companion">
+            <div class="companion-card">
+              <div class="bubble" id="petBubble">坐下来也算。</div>
+              <div class="companion-stats">
+                <span>今日 <b id="todayChars">0</b></span>
+                <span>本次 <b id="sessionClock">00:00</b></span>
+                <span>连续 <b id="streak">0</b> 天</span>
+                <span>灯油 <b id="drops">0</b></span>
+              </div>
+            </div>
+            <button class="pet" id="pet" type="button" title="点一下会说话。双击放到桌面当桌宠，按住可以拖到任意位置，再双击收回来。" data-mood="idle" style="--shine: 0">
+              <svg viewBox="0 0 64 80" aria-hidden="true">
+                <ellipse class="halo" cx="32" cy="18" rx="18" ry="20" />
+                <ellipse class="flame" cx="32" cy="18" rx="7" ry="13" />
+                <ellipse cx="32" cy="48" rx="20" ry="17" fill="#163a6d" />
+                <ellipse class="blush" cx="20" cy="52" rx="4" ry="2" />
+                <ellipse class="blush" cx="44" cy="52" rx="4" ry="2" />
+                <ellipse class="paw left" cx="18" cy="61" rx="7" ry="4.5" />
+                <ellipse class="paw right" cx="46" cy="61" rx="7" ry="4.5" />
+                <rect class="desk" x="8" y="68" width="48" height="6" rx="1.5" />
+                <ellipse class="eye" cx="24.5" cy="45.6" rx="2.05" ry="2.65" />
+                <ellipse class="eye" cx="39.5" cy="45.6" rx="2.05" ry="2.65" />
+                <path class="sleep" d="M22 46h7M36 46h7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="status">
+          <span><b id="charCount">0</b> 字</span>
+          <span><b id="lineCount">0</b> 行</span>
+          <span>今日 <b id="todayCharsBar">0</b></span>
+          <span id="saveState">本地草稿</span>
+          <span class="push"></span>
+          <button id="openData" hidden>打开数据文件夹</button>
+          <button id="copyAll">粘贴到引擎（复制全文）</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="type-hint">Esc 退出打字机 · 本次 <span id="typeClock">00:00</span></div>
+
+    <div class="modal" id="exportModal">
+      <div class="sheet">
+        <h2>导出长图</h2>
+        <p>按行数切开，适合发到社交平台。语法色会印在米色稿纸上。</p>
+        <label for="linesPer">每张图多少行</label>
+        <input id="linesPer" type="number" min="4" max="200" />
+        <div class="sheet-row">
+          <button class="ghost" id="exportCancel">取消</button>
+          <button class="accent" id="exportGo">导出 PNG</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pin-board" id="pinBoard"></div>
+    <div class="toast" id="toast"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

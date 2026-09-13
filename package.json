@@ -1,0 +1,66 @@
+{
+  "name": "inkdesk",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "author": "inkdesk",
+  "description": "inkdesk writing desk",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron": "vite build && electron .",
+    "pack": "vite build && electron-builder --win dir"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.8.1",
+    "@codemirror/lang-markdown": "^6.3.4",
+    "@codemirror/language": "^6.11.3",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.38.1",
+    "@lezer/highlight": "^1.2.1",
+    "codemirror": "^6.0.2"
+  },
+  "devDependencies": {
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.3"
+  },
+  "build": {
+    "appId": "local.inkdesk.app",
+    "productName": "inkdesk",
+    "copyright": "inkdesk",
+    "asar": true,
+    "compression": "maximum",
+    "electronDist": "node_modules/electron/dist",
+    "afterPack": "./scripts/slim-pack.cjs",
+    "electronLanguages": ["en-US", "zh-CN"],
+    "directories": {
+      "output": "C:/Users/HP/motai-release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "executableName": "inkdesk",
+      "icon": "build/icon.ico",
+      "signExecutable": false,
+      "electronLanguages": ["en-US", "zh-CN"],
+      "target": [
+        {
+          "target": "dir",
+          "arch": ["x64"]
+        }
+      ]
+    }
+  },
+  "allowScripts": {
+    "electron@37.10.3": true,
+    "electron-winstaller@5.4.0": true,
+    "esbuild@0.28.2": true
+  }
+}
